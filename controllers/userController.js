@@ -1,4 +1,6 @@
 const User = require("../models/UserModel");
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 
 const getAllUsers = async (req, res) => {
     try {
@@ -63,10 +65,21 @@ const deleteUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const user = await User.findOne({ email: req.body.email, password: req.body.password });
-        res.json({ message: "Utilisateur connecté avec succes", user });
+        const user = await User.findOne({ email: req.body.email });
+
+        if (!user) {
+            return res.status(400).json({ message: "Utilisateur introuvable" });
+        }
+
+        const validPassword = await bcrypt.compare(req.body.password, user.password);
+
+        if (validPassword) {
+            res.json({ message: "Connexion réussie", user });
+        } else {
+            res.status(401).json({ message: "Mot de passe incorrect" });
+        }
     } catch (error) {
-        res.json({ message: "Une erreur est survenue", error });
+        res.status(500).json({ message: "Une erreur est survenue", error });
     }
 };
 
